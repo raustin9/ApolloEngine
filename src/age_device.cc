@@ -16,6 +16,10 @@ namespace age {
     }
 
     age_device::~age_device() {
+        if (this->enable_validation_layers) {
+            age_device::destroy_debug_messenger(this->_instance, this->_debug_messenger, nullptr);
+        }
+
         vkDestroyInstance(this->_instance, nullptr);
     }
 
@@ -23,10 +27,26 @@ namespace age {
      *                 Private
      *********************************************/
 
+    // Static member to perform a callback to display debug error information
+    VKAPI_ATTR VkBool32 VKAPI_CALL 
+    age_device::debugCallback(
+            VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,     // severity of the warning/error
+            VkDebugUtilsMessageTypeFlagsEXT message_type,                // the type of warning/error that occured
+            const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data, // contains the details of error message
+            void* p_user_data                                            // pointer specified during setup of callback that
+                                                                         // allows you to pass your own data to it
+        ) {
+        if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+            std::cerr << "Validation layer: " << p_callback_data->pMessage << std::endl;
+        }
+        return VK_FALSE;
+    }
+
     // Initialize the vulkan library and instance
     void
     age_device::_init_vulkan() {
         this->_create_instance();
+        this->_setup_debug_messenger();
     }
 
     // Create the vulkan instance
@@ -57,8 +77,9 @@ namespace age {
         glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
         // Set the extension information
-        instance_create_info.enabledExtensionCount = glfw_extension_count;
-        instance_create_info.ppEnabledExtensionNames = glfw_extensions;
+        std::vector <const char*> extensions = this->_get_required_extensions();
+        instance_create_info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+        instance_create_info.ppEnabledExtensionNames = extensions.data();
 
         // Set validation layer information
         if (this->enable_validation_layers) {
@@ -72,6 +93,61 @@ namespace age {
         VkResult result = vkCreateInstance(&instance_create_info, nullptr, &this->_instance);
         if (result != VK_SUCCESS) {
             throw new std::runtime_error("Error: unable to create vulkan instance");
+        }
+    }
+
+    // Setup the validation debug messenger 
+    // using our callback function
+    void
+    age_device::_setup_debug_messenger() {
+        if (!this->enable_validation_layers) {
+            return;
+        }
+
+        // Create and fill struct with information about
+        // debug messenger and its callback
+        VkDebugUtilsMessengerCreateInfoEXT debug_info{};
+        debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debug_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT 
+                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        debug_info.pfnUserCallback = age_device::debugCallback;
+        debug_info.pUserData = nullptr; // you can set this pointer to be used in the callback
+
+        if (this->_create_debug_utils_messenger(this->_instance, &debug_info, nullptr, &this->_debug_messenger) != VK_SUCCESS) {
+            throw std::runtime_error("Error: failed to setup the debug messenger");
+        }
+    }
+ 
+    // Setup proxy to create the debug messenger
+    VkResult 
+    age_device::_create_debug_utils_messenger(
+            VkInstance instance,
+            const VkDebugUtilsMessengerCreateInfoEXT *debug_info,
+            const VkAllocationCallbacks *p_allocator,
+            VkDebugUtilsMessengerEXT *p_debug_messenger
+        ) {
+        auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            return func(instance, debug_info, p_allocator, p_debug_messenger);
+        } else {
+            return VK_ERROR_EXTENSION_NOT_PRESENT;
+        }
+    }
+
+    // Static member to destroy the debug messenger on cleanup
+    void
+    age_device::destroy_debug_messenger(
+            VkInstance instance,
+            VkDebugUtilsMessengerEXT debug_messenger,
+            const VkAllocationCallbacks *p_allocator
+        ) {
+        auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+        if (func != nullptr) {
+            func(instance, debug_messenger, p_allocator);
         }
     }
 
@@ -104,5 +180,22 @@ namespace age {
         }
 
         return true;
+    }
+
+    // Get a list of all the extensions that are required for 
+    // vulkan to run properly
+    std::vector <const char*> 
+    age_device::_get_required_extensions() {
+        uint32_t glfw_extension_count = 0;
+        const char** glfw_extensions;
+        
+        glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+        std::vector<const char*> extensions(glfw_extensions, glfw_extensions + glfw_extension_count);
+
+        if (this->enable_validation_layers) {
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        }
+
+        return extensions;
     }
 }
