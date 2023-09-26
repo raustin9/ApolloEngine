@@ -49,6 +49,7 @@ namespace age {
             std::vector <const char*> _get_required_extensions(); // get list of the required extensions
             bool _check_validation_layer_support();               // checks that we are able to use the validation layers we specify
             bool _is_device_suitable(VkPhysicalDevice device); // check if an available device is suitable for operations we need to perform
+            int _rate_device_suitability(VkPhysicalDevice device); // check if an available device is suitable for operations we need to perform
             
             // Private memeber fields
             VkInstance _instance; // Vulkan instance

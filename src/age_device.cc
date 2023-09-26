@@ -1,6 +1,7 @@
 #include "age_device.hh"
 
 #include <cstring>
+#include <map>
 #include <stdexcept>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -134,19 +135,50 @@ namespace age {
             throw std::runtime_error("Error: failed to find GPU with vulkan support");
         }
 
+        std::multimap<int, VkPhysicalDevice> candidates;
         std::vector<VkPhysicalDevice> devices(device_count);
         vkEnumeratePhysicalDevices(this->_instance, &device_count, devices.data());
 
         for (VkPhysicalDevice &device : devices) {
-            if (this->_is_device_suitable(device)) {
-                this->_physical_device = device;
-                break;
-            }
+            int score = this->_rate_device_suitability(device);
+            candidates.insert(std::make_pair(score, device));
+//            if (this->_is_device_suitable(device)) {
+//                this->_physical_device = device;
+//                break;
+//            }
         }
 
-        if (this->_physical_device == VK_NULL_HANDLE) {
-            throw std::runtime_error("Error: failed to find suitable GPU");
-        } 
+        if (candidates.rbegin()->first > 0) {
+            this->_physical_device = candidates.rbegin()->second;
+        } else {
+            throw std::runtime_error("Error: unable to find suitable GPU");
+        }
+
+//        if (this->_physical_device == VK_NULL_HANDLE) {
+//            throw std::runtime_error("Error: failed to find suitable GPU");
+//        } 
+    }
+
+    // Rate the suitability of devices that we can choose from
+    int
+    age_device::_rate_device_suitability(VkPhysicalDevice device) {
+        VkPhysicalDeviceProperties device_properties;
+        VkPhysicalDeviceFeatures device_features;
+
+        vkGetPhysicalDeviceProperties(device, &device_properties);
+        vkGetPhysicalDeviceFeatures(device, &device_features);
+
+        int score = 0;
+        if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+            score += 1000;
+        }
+
+        score += device_properties.limits.maxImageDimension2D;
+
+        if (!device_features.geometryShader)
+            return 0;
+
+        return score;
     }
 
     // Check if a device is suitable for the 
@@ -160,8 +192,6 @@ namespace age {
         vkGetPhysicalDeviceProperties(device, &device_properties);
         vkGetPhysicalDeviceFeatures(device, &device_features);
 
-//        return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
-//               && device_features.geometryShader;
         return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU
                && device_features.geometryShader;
     }
