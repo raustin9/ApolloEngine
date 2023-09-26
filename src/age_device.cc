@@ -49,6 +49,21 @@ namespace age {
         this->_setup_debug_messenger();
     }
 
+    // Populate the debug info struct
+    void
+    age_device::_populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT &create_info) {
+        create_info = {};
+        create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT 
+                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
+                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
+                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+        create_info.pfnUserCallback = age_device::debugCallback;
+    }
+
     // Create the vulkan instance
     void
     age_device::_create_instance() {
@@ -82,11 +97,16 @@ namespace age {
         instance_create_info.ppEnabledExtensionNames = extensions.data();
 
         // Set validation layer information
+        VkDebugUtilsMessengerCreateInfoEXT debug_create_info{};
         if (this->enable_validation_layers) {
             instance_create_info.enabledLayerCount = static_cast<uint32_t>(this->_validation_layers.size());
             instance_create_info.ppEnabledLayerNames = this->_validation_layers.data();
+
+            this->_populate_debug_messenger_create_info(debug_create_info);
+            debug_create_info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debug_create_info;
         } else {
             instance_create_info.enabledLayerCount = 0;
+            debug_create_info.pNext = nullptr;
         }
 
         // Create the instance
@@ -106,15 +126,8 @@ namespace age {
 
         // Create and fill struct with information about
         // debug messenger and its callback
-        VkDebugUtilsMessengerCreateInfoEXT debug_info{};
-        debug_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        debug_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT 
-                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
-                                     | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        debug_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
-                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
-                                 | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-        debug_info.pfnUserCallback = age_device::debugCallback;
+        VkDebugUtilsMessengerCreateInfoEXT debug_info;
+        this->_populate_debug_messenger_create_info(debug_info);
         debug_info.pUserData = nullptr; // you can set this pointer to be used in the callback
 
         if (this->_create_debug_utils_messenger(this->_instance, &debug_info, nullptr, &this->_debug_messenger) != VK_SUCCESS) {

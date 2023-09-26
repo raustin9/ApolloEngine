@@ -43,6 +43,7 @@ namespace age {
                 const VkAllocationCallbacks *p_allocator,
                 VkDebugUtilsMessengerEXT *p_debug_messenger
             );
+            void _populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT &debug_info);
             
             std::vector <const char*> _get_required_extensions(); // get list of the required extensions
             bool _check_validation_layer_support();               // checks that we are able to use the validation layers we specify
