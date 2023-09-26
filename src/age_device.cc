@@ -1,5 +1,7 @@
 #include "age_device.hh"
 
+#include <cstdint>
+#include <optional>
 #include <cstring>
 #include <map>
 #include <stdexcept>
@@ -8,6 +10,16 @@
 #include <vulkan/vulkan_core.h>
 
 namespace age {
+    /// QUEUE FAMILY ///
+    bool
+    QueueFamilyIndices::is_complete() {
+        return this->graphics_family.has_value();
+    }
+
+
+    /// DEVICE ///
+
+
 
     /**********************************************
      *                Public
@@ -162,6 +174,10 @@ namespace age {
     // Rate the suitability of devices that we can choose from
     int
     age_device::_rate_device_suitability(VkPhysicalDevice device) {
+        QueueFamilyIndices indices = this->_find_queue_families(device);
+        if (!indices.is_complete())
+            return 0;
+
         VkPhysicalDeviceProperties device_properties;
         VkPhysicalDeviceFeatures device_features;
 
@@ -179,6 +195,27 @@ namespace age {
             return 0;
 
         return score;
+    }
+
+    QueueFamilyIndices
+    age_device::_find_queue_families(VkPhysicalDevice device) {
+        QueueFamilyIndices indices;
+
+        uint32_t queue_family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+
+        std::vector <VkQueueFamilyProperties> queue_families(queue_family_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+
+        int i = 0;
+        for (const VkQueueFamilyProperties queue_family : queue_families) {
+            if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                indices.graphics_family = i;
+            }
+            i++;
+        }
+
+        return indices;
     }
 
     // Check if a device is suitable for the 

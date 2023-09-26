@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <optional>
 #include <vulkan/vulkan_core.h>
 #ifndef AGE_DEVICE
 #define AGE_DEVICE
@@ -8,6 +9,11 @@
 #include <vulkan/vulkan.h>
 
 namespace age {
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphics_family;
+
+        bool is_complete();
+    };
 
     class age_device {
         public:
@@ -49,7 +55,8 @@ namespace age {
             std::vector <const char*> _get_required_extensions(); // get list of the required extensions
             bool _check_validation_layer_support();               // checks that we are able to use the validation layers we specify
             bool _is_device_suitable(VkPhysicalDevice device); // check if an available device is suitable for operations we need to perform
-            int _rate_device_suitability(VkPhysicalDevice device); // check if an available device is suitable for operations we need to perform
+            int _rate_device_suitability(VkPhysicalDevice device); // rate the desirability of a GPU to choose from
+            QueueFamilyIndices _find_queue_families(VkPhysicalDevice device);
             
             // Private memeber fields
             VkInstance _instance; // Vulkan instance
