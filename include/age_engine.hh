@@ -3,6 +3,7 @@
 #define AGE_ENGINE
 
 #include "age_window.hh"
+#include "age_device.hh"
 
 #include <vulkan/vulkan.h>
 
@@ -21,16 +22,13 @@ namespace age {
             void run();
 
         private:
-            void _init_vulkan();
             void _main_loop();
-            void _cleanup();
 
             // Utils
             void _create_instance();
             
             age_window _window;
-            VkInstance _instance;
-
+            age_device _device;
     };
 
 }
