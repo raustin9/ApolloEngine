@@ -212,6 +212,8 @@ namespace age {
             if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphics_family = i;
             }
+            if (indices.is_complete())
+                break;
             i++;
         }
 
