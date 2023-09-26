@@ -1,0 +1,9 @@
+-std=c++17
+-Iinclude
+-lglfw 
+-ldl 
+-lX11 
+-lXxf86vm 
+-lXrandr 
+-lXi
+
