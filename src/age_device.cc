@@ -11,10 +11,14 @@ namespace age {
     /**********************************************
      *                Public
      *********************************************/
+    // Constructor //
     age_device::age_device() {
-        this->_init_vulkan();
+        this->_create_instance();
+        this->_setup_debug_messenger();
+        this->_pick_physical_device();
     }
 
+    // Destructor //
     age_device::~age_device() {
         if (this->enable_validation_layers) {
             age_device::destroy_debug_messenger(this->_instance, this->_debug_messenger, nullptr);
@@ -114,6 +118,52 @@ namespace age {
         if (result != VK_SUCCESS) {
             throw new std::runtime_error("Error: unable to create vulkan instance");
         }
+    }
+
+    // Pick the physical device (GPU)
+    // that we are going to be using
+    void
+    age_device::_pick_physical_device() {
+        this->_physical_device = VK_NULL_HANDLE;
+        uint32_t device_count = 0;
+        
+        vkEnumeratePhysicalDevices(this->_instance, &device_count, nullptr);
+
+        // Cannot find a GPU 
+        if (device_count == 0) {
+            throw std::runtime_error("Error: failed to find GPU with vulkan support");
+        }
+
+        std::vector<VkPhysicalDevice> devices(device_count);
+        vkEnumeratePhysicalDevices(this->_instance, &device_count, devices.data());
+
+        for (VkPhysicalDevice &device : devices) {
+            if (this->_is_device_suitable(device)) {
+                this->_physical_device = device;
+                break;
+            }
+        }
+
+        if (this->_physical_device == VK_NULL_HANDLE) {
+            throw std::runtime_error("Error: failed to find suitable GPU");
+        } 
+    }
+
+    // Check if a device is suitable for the 
+    // operations that we are going to perform
+    // with it
+    bool
+    age_device::_is_device_suitable(VkPhysicalDevice device) {
+        VkPhysicalDeviceProperties device_properties;
+        VkPhysicalDeviceFeatures device_features;
+
+        vkGetPhysicalDeviceProperties(device, &device_properties);
+        vkGetPhysicalDeviceFeatures(device, &device_features);
+
+//        return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+//               && device_features.geometryShader;
+        return device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU
+               && device_features.geometryShader;
     }
 
     // Setup the validation debug messenger 

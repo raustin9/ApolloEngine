@@ -35,6 +35,7 @@ namespace age {
 
             // Private Member Functions
             void _init_vulkan();
+            void _pick_physical_device();
             void _create_instance();
             void _setup_debug_messenger();
             VkResult _create_debug_utils_messenger(
@@ -47,9 +48,11 @@ namespace age {
             
             std::vector <const char*> _get_required_extensions(); // get list of the required extensions
             bool _check_validation_layer_support();               // checks that we are able to use the validation layers we specify
+            bool _is_device_suitable(VkPhysicalDevice device); // check if an available device is suitable for operations we need to perform
             
             // Private memeber fields
             VkInstance _instance; // Vulkan instance
+            VkPhysicalDevice _physical_device; // the physical GPU
             VkDebugUtilsMessengerEXT _debug_messenger; // debug messenger
             const std::vector <const char*> _validation_layers = {
                 "VK_LAYER_KHRONOS_validation"
