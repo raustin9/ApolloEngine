@@ -1,7 +1,6 @@
 #include "age_engine.hh"
 
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <exception>
 #include <GLFW/glfw3.h>

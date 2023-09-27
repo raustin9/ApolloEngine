@@ -62,6 +62,7 @@ namespace age {
             // Private memeber fields
             VkInstance _instance;                                  // Vulkan instance
             VkPhysicalDevice _physical_device;                     // the physical GPU
+            VkQueue _graphics_queue;                               // queue to interface with the device
             VkDevice _logical_device;                              // logical device to interface with
             VkDebugUtilsMessengerEXT _debug_messenger;             // debug messenger
             const std::vector <const char*> _validation_layers = { // validation layer checks that we want

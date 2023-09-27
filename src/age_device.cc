@@ -84,7 +84,7 @@ namespace age {
     void
     age_device::_create_instance() {
         if (enable_validation_layers && !_check_validation_layer_support()) {
-            throw new std::runtime_error("Error: validation layer requested but not available");
+            throw std::runtime_error("Error: validation layer requested but not available");
         }
 
         uint32_t glfw_extension_count = 0;
@@ -128,7 +128,7 @@ namespace age {
         // Create the instance
         VkResult result = vkCreateInstance(&instance_create_info, nullptr, &this->_instance);
         if (result != VK_SUCCESS) {
-            throw new std::runtime_error("Error: unable to create vulkan instance");
+            throw std::runtime_error("Error: unable to create vulkan instance");
         }
     }
 
@@ -188,6 +188,8 @@ namespace age {
         // Give highest priority to this queue
         queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
 
+        // Specify the set of device features that we will be using
+        // FOR NOW: we don't need anything special, so we can leave it
         VkPhysicalDeviceFeatures device_features{};
         VkDeviceCreateInfo device_create_info{};
 
@@ -196,6 +198,7 @@ namespace age {
         device_create_info.queueCreateInfoCount = 1;
         device_create_info.pEnabledFeatures = &device_features;
 
+        // Set the -device specific- validation layers and extensions
         device_create_info.enabledExtensionCount = 0;
         if (this->enable_validation_layers) {
             device_create_info.enabledLayerCount = static_cast<uint32_t>(this->_validation_layers.size());
@@ -204,9 +207,19 @@ namespace age {
             device_create_info.enabledLayerCount = 0;
         }
 
+        // Create the instance of hte logical device
         if (vkCreateDevice(this->_physical_device, &device_create_info, nullptr, &this->_logical_device) != VK_SUCCESS) {
             throw std::runtime_error("Error: failed to create logical device");
         }
+
+        // Get the device queue for the graphics queue family and this device
+        // -- implicity cleaned up when the logical device is destroyed --
+        vkGetDeviceQueue(
+            this->_logical_device,
+            indices.graphics_family.value(),
+            0,
+            &this->_graphics_queue
+        );
     }
 
     // Rate the suitability of devices that we can choose from

@@ -24,8 +24,6 @@ namespace age {
             uint32_t _height;
             std::string _name;
             GLFWwindow* _window;
-
-
     };
 }
 
