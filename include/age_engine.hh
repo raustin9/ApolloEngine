@@ -24,11 +24,12 @@ namespace age {
         private:
             void _main_loop();
 
-            // Utils
-            void _create_instance();
-            
+            // Member fields
             age_window _window;
             age_device _device;
+ 
+            // Utils
+            void _create_instance();
     };
 
 }

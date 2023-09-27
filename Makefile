@@ -1,6 +1,6 @@
 CC=g++
 INCLUDE=-Iinclude
-CFLAGS=-std=c++17
+CFLAGS=-std=c++17 -g
 LDFLAGS=-lglfw -lvulkan -ldl -lX11 -lXxf86vm -lXrandr -lXi
 OBJS=obj/age_window.o obj/age_engine.o obj/age_device.o
 
@@ -11,6 +11,9 @@ clean:
 	
 redo: clean bin/age
 	./bin/age
+
+test: clean bin/age
+	valgrind --leak-check=full --track-origins=yes bin/age
 
 run: bin/age
 	./bin/age
