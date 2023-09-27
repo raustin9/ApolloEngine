@@ -1,4 +1,5 @@
 #pragma once
+#include <vulkan/vulkan_core.h>
 #ifndef ENGINE_WINDOW
 #define ENGINE_WINDOW
 
@@ -17,6 +18,7 @@ namespace age {
             void open();
             void init_window();
             bool should_close();
+            void create_window_surface(VkInstance instance, VkSurfaceKHR *surface);
 
         private:
             // static void _resize_framebuffer_callback(GLFWwindow* window, int width, int height);

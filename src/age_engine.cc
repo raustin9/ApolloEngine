@@ -16,7 +16,7 @@ namespace age {
 
     // Constructor
     age_engine::age_engine(uint32_t width, uint32_t height, std::string name)
-    : _window{width, height, name}, _device() {
+    : _window{width, height, name}, _device(_window) {
     }
 
     // Destructor

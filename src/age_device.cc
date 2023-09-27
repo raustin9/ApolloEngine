@@ -4,6 +4,7 @@
 #include <optional>
 #include <cstring>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
@@ -13,7 +14,8 @@ namespace age {
     /// QUEUE FAMILY ///
     bool
     QueueFamilyIndices::is_complete() {
-        return this->graphics_family.has_value();
+        return this->graphics_family.has_value()
+               && this->present_family.has_value();
     }
 
 
@@ -22,9 +24,11 @@ namespace age {
      *                Public
      *********************************************/
     // Constructor //
-    age_device::age_device() {
+    age_device::age_device(age_window &window) 
+    : _window{window} {
         this->_create_instance();
         this->_setup_debug_messenger();
+        this->_create_window_surface();
         this->_pick_physical_device();
         this->_create_logical_device();
     }
@@ -36,6 +40,7 @@ namespace age {
             age_device::destroy_debug_messenger(this->_instance, this->_debug_messenger, nullptr);
         }
 
+        vkDestroySurfaceKHR(this->_instance, this->_window_surface, nullptr);
         vkDestroyInstance(this->_instance, nullptr);
     }
 
@@ -132,6 +137,12 @@ namespace age {
         }
     }
 
+    // Create the surface to interface with the window
+    void
+    age_device::_create_window_surface() {
+        this->_window.create_window_surface(this->_instance, &this->_window_surface);
+    }
+
     // Pick the physical device (GPU)
     // that we are going to be using
     void
@@ -177,16 +188,28 @@ namespace age {
         float queue_priority = 1.0F;
         QueueFamilyIndices indices = this->_find_queue_families(this->_physical_device);
 
-        // Describes the number of queues that we want for a single queue family.
-        // We are only interested in a queue with graphics capabilities
-        // right now
-        VkDeviceQueueCreateInfo queue_create_info{};
-        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info.queueFamilyIndex = indices.graphics_family.value();
-        queue_create_info.queueCount = 1;
+        std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+        std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
 
-        // Give highest priority to this queue
-        queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
+        for (uint32_t queue_family : unique_queue_families) {
+            VkDeviceQueueCreateInfo queue_create_info{};
+            queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queue_create_info.queueFamilyIndex = indices.graphics_family.value();
+            queue_create_info.queueCount = 1;
+            queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
+            queue_create_infos.push_back(queue_create_info);
+        }
+
+//        // Describes the number of queues that we want for a single queue family.
+//        // We are only interested in a queue with graphics capabilities
+//        // right now
+//        VkDeviceQueueCreateInfo queue_create_info{};
+//        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+//        queue_create_info.queueFamilyIndex = indices.graphics_family.value();
+//        queue_create_info.queueCount = 1;
+//
+//        // Give highest priority to this queue
+//        queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
 
         // Specify the set of device features that we will be using
         // FOR NOW: we don't need anything special, so we can leave it
@@ -194,8 +217,8 @@ namespace age {
         VkDeviceCreateInfo device_create_info{};
 
         device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        device_create_info.pQueueCreateInfos = &queue_create_info;
-        device_create_info.queueCreateInfoCount = 1;
+        device_create_info.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
+        device_create_info.pQueueCreateInfos = queue_create_infos.data();
         device_create_info.pEnabledFeatures = &device_features;
 
         // Set the -device specific- validation layers and extensions
@@ -219,6 +242,12 @@ namespace age {
             indices.graphics_family.value(),
             0,
             &this->_graphics_queue
+        );
+        vkGetDeviceQueue(
+            this->_logical_device,
+            indices.present_family.value(),
+            0,
+            &this->_present_queue
         );
     }
 
@@ -263,6 +292,14 @@ namespace age {
             if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphics_family = i;
             }
+
+            // Make sure the physical device can draw to the surface
+            VkBool32 present_support = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _window_surface, &present_support);
+            if (present_support) {
+                indices.present_family = i;
+            }
+
             if (indices.is_complete())
                 break;
             i++;
