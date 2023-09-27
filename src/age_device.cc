@@ -18,9 +18,6 @@ namespace age {
 
 
     /// DEVICE ///
-
-
-
     /**********************************************
      *                Public
      *********************************************/
@@ -29,10 +26,12 @@ namespace age {
         this->_create_instance();
         this->_setup_debug_messenger();
         this->_pick_physical_device();
+        this->_create_logical_device();
     }
 
     // Destructor //
     age_device::~age_device() {
+        vkDestroyDevice(this->_logical_device, nullptr);
         if (this->enable_validation_layers) {
             age_device::destroy_debug_messenger(this->_instance, this->_debug_messenger, nullptr);
         }
@@ -169,6 +168,45 @@ namespace age {
 //        if (this->_physical_device == VK_NULL_HANDLE) {
 //            throw std::runtime_error("Error: failed to find suitable GPU");
 //        } 
+    }
+
+    // Create the logical device that 
+    // we are going to interface with
+    void
+    age_device::_create_logical_device() {
+        float queue_priority = 1.0F;
+        QueueFamilyIndices indices = this->_find_queue_families(this->_physical_device);
+
+        // Describes the number of queues that we want for a single queue family.
+        // We are only interested in a queue with graphics capabilities
+        // right now
+        VkDeviceQueueCreateInfo queue_create_info{};
+        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_info.queueFamilyIndex = indices.graphics_family.value();
+        queue_create_info.queueCount = 1;
+
+        // Give highest priority to this queue
+        queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
+
+        VkPhysicalDeviceFeatures device_features{};
+        VkDeviceCreateInfo device_create_info{};
+
+        device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        device_create_info.pQueueCreateInfos = &queue_create_info;
+        device_create_info.queueCreateInfoCount = 1;
+        device_create_info.pEnabledFeatures = &device_features;
+
+        device_create_info.enabledExtensionCount = 0;
+        if (this->enable_validation_layers) {
+            device_create_info.enabledLayerCount = static_cast<uint32_t>(this->_validation_layers.size());
+            device_create_info.ppEnabledLayerNames = this->_validation_layers.data();
+        } else {
+            device_create_info.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(this->_physical_device, &device_create_info, nullptr, &this->_logical_device) != VK_SUCCESS) {
+            throw std::runtime_error("Error: failed to create logical device");
+        }
     }
 
     // Rate the suitability of devices that we can choose from
