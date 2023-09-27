@@ -1,4 +1,5 @@
 #pragma once
+#include "age_window.hh"
 #include <iostream>
 #include <optional>
 #include <vulkan/vulkan_core.h>
@@ -11,6 +12,7 @@
 namespace age {
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphics_family;
+        std::optional<uint32_t> present_family;
 
         bool is_complete();
     };
@@ -23,7 +25,7 @@ namespace age {
             const bool enable_validation_layers = true;
 #endif
 
-            age_device();
+            age_device(age_window &window);
             age_device(const age_device&) = delete;
             age_device& operator= (const age_device&) = delete;
             ~age_device();
@@ -41,6 +43,7 @@ namespace age {
 
             // Private Member Functions
             void _init_vulkan();                    // initialize vulkan
+            void _create_window_surface();          // create the surface for the window to interface with
             void _pick_physical_device();           // pick the GPU that we are going to use
             void _create_logical_device();          // create the logical device to interface with
             void _create_instance();                // create the vulkan instance
@@ -60,11 +63,14 @@ namespace age {
             QueueFamilyIndices _find_queue_families(VkPhysicalDevice device); // find the queue families we can put command and other queues into
             
             // Private memeber fields
+            age_window &_window;                                   // Apollo engine window to draw to
             VkInstance _instance;                                  // Vulkan instance
             VkPhysicalDevice _physical_device;                     // the physical GPU
-            VkQueue _graphics_queue;                               // queue to interface with the device
+            VkQueue _graphics_queue;                               // queue for the graphics
+            VkQueue _present_queue;                                // queue for the surface
             VkDevice _logical_device;                              // logical device to interface with
             VkDebugUtilsMessengerEXT _debug_messenger;             // debug messenger
+            VkSurfaceKHR _window_surface;                          // abstracted surface to render images to
             const std::vector <const char*> _validation_layers = { // validation layer checks that we want
                 "VK_LAYER_KHRONOS_validation"
             };

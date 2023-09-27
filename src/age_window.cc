@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdint>
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
 
 namespace age {
 
@@ -41,6 +42,14 @@ namespace age {
     bool
     age_window::should_close() {
         return glfwWindowShouldClose(this->_window);
+    }
+
+    // Create the surface to interface with the window
+    void
+    age_window::create_window_surface(VkInstance instance, VkSurfaceKHR *surface) {
+        if (glfwCreateWindowSurface(instance, this->_window, nullptr, surface) != VK_SUCCESS) {
+            throw std::runtime_error("Error: failed to create window surface");
+        }
     }
 
     // Open the window
