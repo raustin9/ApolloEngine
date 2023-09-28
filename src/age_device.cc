@@ -215,7 +215,8 @@ namespace age {
         device_create_info.pEnabledFeatures = &device_features;
 
         // Set the -device specific- validation layers and extensions
-        device_create_info.enabledExtensionCount = 0;
+        device_create_info.enabledExtensionCount = static_cast<uint32_t>(this->_device_extensions.size());
+        device_create_info.ppEnabledExtensionNames = this->_device_extensions.data();
         if (this->enable_validation_layers) {
             device_create_info.enabledLayerCount = static_cast<uint32_t>(this->_validation_layers.size());
             device_create_info.ppEnabledLayerNames = this->_validation_layers.data();
