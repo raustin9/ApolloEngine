@@ -191,6 +191,9 @@ namespace age {
         std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
         std::set<uint32_t> unique_queue_families = {indices.graphics_family.value(), indices.present_family.value()};
 
+        // Describes the number of queues that we want for a single queue family.
+        // We are only interested in a queue with graphics capabilities
+        // right now
         for (uint32_t queue_family : unique_queue_families) {
             VkDeviceQueueCreateInfo queue_create_info{};
             queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -200,16 +203,6 @@ namespace age {
             queue_create_infos.push_back(queue_create_info);
         }
 
-//        // Describes the number of queues that we want for a single queue family.
-//        // We are only interested in a queue with graphics capabilities
-//        // right now
-//        VkDeviceQueueCreateInfo queue_create_info{};
-//        queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-//        queue_create_info.queueFamilyIndex = indices.graphics_family.value();
-//        queue_create_info.queueCount = 1;
-//
-//        // Give highest priority to this queue
-//        queue_create_info.pQueuePriorities = &queue_priority; // 1.0F for right now
 
         // Specify the set of device features that we will be using
         // FOR NOW: we don't need anything special, so we can leave it
@@ -235,7 +228,8 @@ namespace age {
             throw std::runtime_error("Error: failed to create logical device");
         }
 
-        // Get the device queue for the graphics queue family and this device
+        // Get the device queue for the graphics queue family 
+        // and the present queue family for this device
         // -- implicity cleaned up when the logical device is destroyed --
         vkGetDeviceQueue(
             this->_logical_device,
@@ -255,7 +249,7 @@ namespace age {
     int
     age_device::_rate_device_suitability(VkPhysicalDevice device) {
         QueueFamilyIndices indices = this->_find_queue_families(device);
-        if (!indices.is_complete())
+        if (!indices.is_complete() || !this->_check_device_extension_support(device))
             return 0;
 
         VkPhysicalDeviceProperties device_properties;
@@ -271,12 +265,33 @@ namespace age {
 
         score += device_properties.limits.maxImageDimension2D;
 
+
+        // Check if the device has a geometry shader
         if (!device_features.geometryShader)
             return 0;
 
         return score;
     }
 
+    // Check if the device supports
+    // the required extensions that we need
+    bool
+    age_device::_check_device_extension_support(VkPhysicalDevice device) {
+        uint32_t extension_count;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
+
+        std::vector<VkExtensionProperties> available_extensions(extension_count);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, available_extensions.data());
+        std::set <std::string> required_extensions{this->_device_extensions.begin(), this->_device_extensions.end()};
+
+        for (const VkExtensionProperties& extension : available_extensions) {
+            std::cout << "Extension name: " << extension.extensionName << std::endl;
+            required_extensions.erase(extension.extensionName);              
+        }
+        return required_extensions.empty();
+    }
+
+    // Find and the queue families
     QueueFamilyIndices
     age_device::_find_queue_families(VkPhysicalDevice device) {
         QueueFamilyIndices indices;
@@ -287,6 +302,7 @@ namespace age {
         std::vector <VkQueueFamilyProperties> queue_families(queue_family_count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
 
+        // Set the indices of the queue families
         int i = 0;
         for (const VkQueueFamilyProperties queue_family : queue_families) {
             if (queue_family.queueFlags & VK_QUEUE_GRAPHICS_BIT) {

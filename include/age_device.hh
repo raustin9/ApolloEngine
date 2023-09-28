@@ -48,6 +48,9 @@ namespace age {
             void _create_logical_device();          // create the logical device to interface with
             void _create_instance();                // create the vulkan instance
             void _setup_debug_messenger();          // setup necessary steps to create the debug messenger
+            bool _check_device_extension_support(   // check the device to see if it supports the extensions we need
+                VkPhysicalDevice device
+            );  
             void _populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT &debug_info); // fill in debug create info struct
             VkResult _create_debug_utils_messenger( // create the debug messenger that can send the messages
                 VkInstance instance,
@@ -73,6 +76,9 @@ namespace age {
             VkSurfaceKHR _window_surface;                          // abstracted surface to render images to
             const std::vector <const char*> _validation_layers = { // validation layer checks that we want
                 "VK_LAYER_KHRONOS_validation"
+            };
+            const std::vector <const char*> _device_extensions = { // list of required device extensions
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME
             };
     };
 }
