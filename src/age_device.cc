@@ -44,6 +44,30 @@ namespace age {
         vkDestroyInstance(this->_instance, nullptr);
     }
 
+    SwapChainSupportDetails
+    age_device::get_swapchain_support() {
+        return this->_query_swap_chain_support(this->_physical_device);
+    }
+
+    // Get the device surface
+    VkSurfaceKHR
+    age_device::get_surface() {
+        return this->_window_surface;
+    }
+
+    // Get the device queue families
+    QueueFamilyIndices
+    age_device::find_physical_device_queue_families() {
+        return this->_find_queue_families(this->_physical_device);
+    }
+
+    // Get the logical device
+    // accessor
+    VkDevice
+    age_device::get_device() {
+        return this->_logical_device;
+    }
+
     /**********************************************
      *                 Private
      *********************************************/
@@ -249,9 +273,21 @@ namespace age {
     // Rate the suitability of devices that we can choose from
     int
     age_device::_rate_device_suitability(VkPhysicalDevice device) {
+        bool swap_chain_adequate = false;
+        bool extensions_supported = this->_check_device_extension_support(device);
         QueueFamilyIndices indices = this->_find_queue_families(device);
-        if (!indices.is_complete() || !this->_check_device_extension_support(device))
+
+        if (!indices.is_complete() 
+            || !extensions_supported
+            ) {
             return 0;
+        }
+
+        if (extensions_supported) {
+            SwapChainSupportDetails swap_chain_support = this->_query_swap_chain_support(device);
+            swap_chain_adequate = !swap_chain_support.formats.empty()
+                                  && !swap_chain_support.present_modes.empty();
+        }
 
         VkPhysicalDeviceProperties device_properties;
         VkPhysicalDeviceFeatures device_features;
@@ -266,9 +302,11 @@ namespace age {
 
         score += device_properties.limits.maxImageDimension2D;
 
+        
 
         // Check if the device has a geometry shader
-        if (!device_features.geometryShader)
+        if (!device_features.geometryShader
+            || !swap_chain_adequate)
             return 0;
 
         return score;
@@ -290,6 +328,32 @@ namespace age {
             required_extensions.erase(extension.extensionName);              
         }
         return required_extensions.empty();
+    }
+
+    // Populate the swap chain support details struct
+    SwapChainSupportDetails
+    age_device::_query_swap_chain_support(VkPhysicalDevice device) {
+        uint32_t format_count, present_mode_count;
+        SwapChainSupportDetails details;
+
+        // Get the surface and device capabilities
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, this->_window_surface, &details.capabilities);
+
+        // Get the surface and device formats
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, this->_window_surface, &format_count, nullptr);
+        if (format_count != 0) {
+            details.formats.resize(format_count);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, this->_window_surface, &format_count, details.formats.data());
+        }
+
+        // Get the surface and device present modes
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, this->_window_surface, &present_mode_count, nullptr);
+        if (present_mode_count != 0) {
+            details.present_modes.resize(present_mode_count);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, this->_window_surface, &present_mode_count, details.present_modes.data());
+        }
+
+        return details;
     }
 
     // Find and the queue families

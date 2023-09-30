@@ -1,10 +1,10 @@
 #pragma once
-#include <vulkan/vulkan_core.h>
 #ifndef ENGINE_WINDOW
 #define ENGINE_WINDOW
 
 #include <cstdint>
 #include <string>
+#include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
 namespace age {
@@ -18,6 +18,7 @@ namespace age {
             void open();
             void init_window();
             bool should_close();
+            VkExtent2D get_extent();
             void create_window_surface(VkInstance instance, VkSurfaceKHR *surface);
 
         private:

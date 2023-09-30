@@ -4,11 +4,13 @@
 
 #include "age_window.hh"
 #include "age_device.hh"
+#include "age_swapchain.hh"
 
 #include <vulkan/vulkan.h>
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 namespace age {
     
@@ -27,6 +29,7 @@ namespace age {
             // Member fields
             age_window _window;
             age_device _device;
+            age_swapchain _swapchain;
  
             // Utils
             void _create_instance();

@@ -1,5 +1,6 @@
 #include "age_engine.hh"
 #include "age_window.hh"
+#include "age_swapchain.hh"
 
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -16,7 +17,7 @@ namespace age {
 
     // Constructor
     age_engine::age_engine(uint32_t width, uint32_t height, std::string name)
-    : _window{width, height, name}, _device(_window) {
+    : _window{width, height, name}, _device(_window), _swapchain(_device, _window.get_extent()) {
     }
 
     // Destructor

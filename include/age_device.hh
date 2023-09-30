@@ -1,11 +1,12 @@
 #pragma once
-#include "age_window.hh"
-#include <iostream>
-#include <optional>
-#include <vulkan/vulkan_core.h>
 #ifndef AGE_DEVICE
 #define AGE_DEVICE
 
+#include "age_window.hh"
+
+#include <iostream>
+#include <optional>
+#include <vulkan/vulkan_core.h>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -15,6 +16,12 @@ namespace age {
         std::optional<uint32_t> present_family;
 
         bool is_complete();
+    };
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector <VkSurfaceFormatKHR> formats;
+        std::vector <VkPresentModeKHR> present_modes;
     };
 
     class age_device {
@@ -29,6 +36,11 @@ namespace age {
             age_device(const age_device&) = delete;
             age_device& operator= (const age_device&) = delete;
             ~age_device();
+
+            SwapChainSupportDetails get_swapchain_support();
+            QueueFamilyIndices find_physical_device_queue_families();
+            VkSurfaceKHR get_surface(); // get the surface
+            VkDevice get_device(); // get the logical device
 
         private:
             static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( // static member callback function for debug error messages
@@ -51,6 +63,7 @@ namespace age {
             bool _check_device_extension_support(   // check the device to see if it supports the extensions we need
                 VkPhysicalDevice device
             );  
+            SwapChainSupportDetails _query_swap_chain_support(VkPhysicalDevice device); // populate the swap chain support details struct
             void _populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT &debug_info); // fill in debug create info struct
             VkResult _create_debug_utils_messenger( // create the debug messenger that can send the messages
                 VkInstance instance,
