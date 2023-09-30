@@ -38,6 +38,17 @@ namespace age {
         return;
     }
 
+    // Create and return the extent of the window
+    VkExtent2D
+    age_window::get_extent() {
+        VkExtent2D extent = {
+            static_cast<uint32_t>(this->_width),
+            static_cast<uint32_t>(this->_height)
+        };
+
+        return extent;
+    }
+
     // Determine if the window should close
     bool
     age_window::should_close() {
