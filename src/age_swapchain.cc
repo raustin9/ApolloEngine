@@ -16,6 +16,11 @@ namespace age {
 
     // Destrcutor //
     age_swapchain::~age_swapchain() {
+        // Image views are explicitly created by us, so we clean them up
+        for (VkImageView image_view : this->_swapchain_image_views) {
+            vkDestroyImageView(this->_device.get_device(), image_view, nullptr);
+        }
+
         // Destroy the swapchain
         if (this->_swapchain != nullptr) {
             vkDestroySwapchainKHR(this->_device.get_device(), this->_swapchain, nullptr);
@@ -26,6 +31,7 @@ namespace age {
     void
     age_swapchain::_init() {
         this->_create_swapchain();
+        this->_create_image_views();
     }
 
     // Create the swapchain
@@ -108,6 +114,43 @@ namespace age {
 
         this->_swapchain_image_format = surface_format.format;
         this->_swapchain_extent = extent;
+    }
+
+    void 
+    age_swapchain::_create_image_views() {
+        this->_swapchain_image_views.resize(this->_swapchain_images.size());
+
+        for (size_t i = 0; i < this->_swapchain_images.size(); i++) {
+            VkImageViewCreateInfo create_info{};
+            create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+            create_info.image = this->_swapchain_images[i]; 
+            
+            // treat images as 2D textures
+            create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;       
+            create_info.format = this->_swapchain_image_format;
+
+            // Swizzle the colors 
+            // for example you can map all channels to the red channel for monochrome texture
+            // or map constant values of 0 or 1 to a channel
+            create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+            create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+            create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+            create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+            // Describes the image purpose and which part of the image should be accessed
+            // These images will be used as color targets without any mipmapping levels or multiple layers
+            create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            create_info.subresourceRange.baseMipLevel = 0;
+            create_info.subresourceRange.levelCount = 1;
+            create_info.subresourceRange.baseArrayLayer = 0;
+            create_info.subresourceRange.layerCount = 1;
+
+            if (vkCreateImageView(this->_device.get_device(), &create_info, nullptr, &this->_swapchain_image_views[i])
+                != VK_SUCCESS) {
+                throw std::runtime_error("Error: unable to create image views");
+            }
+
+        }
     }
 
     // Choose the surface format

@@ -25,14 +25,16 @@ namespace age {
 
             void _init();
             void _create_swapchain();
+            void _create_image_views();
 
             // Member fields
             age_device& _device;
             VkExtent2D _extent;
             VkSwapchainKHR _swapchain;
-            std::vector<VkImage> _swapchain_images;
             VkFormat _swapchain_image_format;
             VkExtent2D _swapchain_extent;
+            std::vector<VkImage> _swapchain_images;
+            std::vector<VkImageView> _swapchain_image_views;
     };
 }
 
